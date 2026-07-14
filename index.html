@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>廈門・平潭・福州 5天4夜行程</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#6B4A36;
+    --navy-deep:#4A3225;
+    --teal:#E8C39E;
+    --stone:#A67C52;
+    --sand:#EDE0CF;
+    --paper:#FBF6EE;
+    --ink:#3A2A1E;
+    --ink-soft:#8A6F58;
+    --line:#E0D2B8;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0;
+    height:100%; width:100%;
+    font-family:'Noto Sans TC',sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    overflow:hidden;
+  }
+
+  .app{
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+    height:100vh;
+  }
+
+  /* HEADER */
+  .header{
+    background:var(--navy-deep);
+    color:var(--paper);
+    padding:14px 16px 10px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .header-text .eyebrow{
+    font-size:10px;
+    letter-spacing:0.18em;
+    color:var(--teal);
+    font-weight:700;
+  }
+  .header-text h1{
+    margin:2px 0 0;
+    font-family:'Noto Serif TC',serif;
+    font-size:16px;
+    font-weight:700;
+    line-height:1.3;
+  }
+  .view-toggle{
+    margin-left:auto;
+    display:flex;
+    background:rgba(255,255,255,0.12);
+    border-radius:999px;
+    padding:3px;
+    gap:2px;
+    flex-shrink:0;
+  }
+  .view-btn{
+    border:none;
+    background:transparent;
+    color:rgba(255,255,255,0.6);
+    font-size:13px;
+    padding:5px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    font-family:'Noto Sans TC',sans-serif;
+    font-weight:700;
+    transition:all .2s;
+  }
+  .view-btn.active{
+    background:var(--teal);
+    color:var(--navy-deep);
+  }
+
+  /* DAY TABS */
+  .day-tabs{
+    display:flex;
+    gap:6px;
+    padding:10px 16px;
+    overflow-x:auto;
+    background:var(--sand);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+    scrollbar-width:none;
+  }
+  .day-tabs::-webkit-scrollbar{ display:none; }
+  .day-tab{
+    border:1.5px solid var(--line);
+    background:var(--paper);
+    color:var(--ink-soft);
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:13px;
+    padding:7px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .2s;
+  }
+  .day-tab.active{
+    background:var(--navy);
+    color:var(--teal);
+    border-color:var(--navy);
+  }
+
+  /* CONTENT */
+  .content{
+    flex:1;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* MAP VIEW */
+  .map-view{
+    position:absolute;
+    inset:0;
+    display:none;
+  }
+  .map-view.visible{ display:block; }
+  #map{ width:100%; height:100%; }
+
+  .leaflet-popup-content-wrapper{
+    background:var(--navy-deep);
+    color:var(--paper);
+    border-radius:12px;
+  }
+  .leaflet-popup-tip{ background:var(--navy-deep); }
+  .leaflet-popup-content{
+    font-family:'Noto Sans TC',sans-serif;
+    font-size:13px;
+    margin:12px 14px;
+    line-height:1.55;
+  }
+  .leaflet-popup-content b{ color:var(--teal); font-size:14px; }
+  .popup-maplink{
+    display:inline-block;
+    margin-top:6px;
+    color:var(--teal);
+    font-size:12px;
+    font-weight:700;
+    text-decoration:none;
+  }
+  .pin-bubble{
+    width:32px; height:32px; border-radius:50%;
+    background:var(--stone);
+    border:2.5px solid #fff;
+    color:#fff; font-weight:700; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 10px rgba(0,0,0,0.4);
+    font-family:'Noto Serif TC',serif;
+  }
+
+  /* LIST VIEW */
+  .list-view{
+    position:absolute;
+    inset:0;
+    overflow-y:auto;
+    display:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .list-view.visible{ display:block; }
+
+  .day-header{
+    padding:16px 18px 12px;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .day-header .eyebrow{
+    font-size:10px;
+    letter-spacing:0.16em;
+    font-weight:700;
+    color:var(--stone);
+    text-transform:uppercase;
+  }
+  .day-header h2{
+    margin:4px 0 3px;
+    font-family:'Noto Serif TC',serif;
+    font-size:19px;
+    font-weight:900;
+    color:var(--navy);
+    line-height:1.3;
+  }
+  .day-header p{
+    margin:0;
+    font-size:12px;
+    color:var(--ink-soft);
+    line-height:1.55;
+  }
+
+  .stops-list{ padding:12px 16px 40px; }
+
+  .stop{
+    display:flex;
+    gap:12px;
+    padding:14px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .stop:last-child{ border-bottom:none; }
+
+  .stop-left{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .stop-num{
+    flex-shrink:0;
+    width:32px; height:32px; border-radius:50%;
+    background:var(--navy);
+    color:var(--teal);
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stop-line{
+    width:2px;
+    flex:1;
+    min-height:16px;
+    background:var(--line);
+    margin:5px 0 0;
+  }
+  .stop:last-child .stop-line{ display:none; }
+
+  .stop-body{ flex:1; }
+  .stop-body .time{
+    font-size:11px;
+    color:var(--stone);
+    font-weight:700;
+    letter-spacing:0.04em;
+  }
+  .stop-body h3{
+    margin:3px 0 5px;
+    font-size:16px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1.3;
+  }
+  .stop-body p{
+    margin:0 0 8px;
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .map-link{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:12.5px;
+    color:var(--stone);
+    font-weight:700;
+    text-decoration:none;
+    border:1.5px solid var(--line);
+    border-radius:999px;
+    padding:5px 14px;
+    background:var(--sand);
+  }
+  .map-link:active{ background:var(--line); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-text">
+      <div class="eyebrow">FUJIAN COASTAL ROUTE</div>
+      <h1>廈門・平潭・福州<br>5天4夜行程地圖</h1>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnList" onclick="setView('list')">清單</button>
+      <button class="view-btn" id="btnMap" onclick="setView('map')">地圖</button>
+    </div>
+  </div>
+
+  <div class="day-tabs" id="dayTabs"></div>
+
+  <div class="content">
+    <div class="list-view visible" id="listView">
+      <div class="day-header" id="dayHeader"></div>
+      <div class="stops-list" id="stopsList"></div>
+    </div>
+    <div class="map-view" id="mapView">
+      <div id="map"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const itinerary = [
+  {
+    day:1, title:"廈門入境 → 福州",
+    sub:"搭高鐵或包車前往福州，入住西湖大飯店，晚上逛三坊七巷與夜市",
+    center:[26.05,118.9], zoom:8,
+    stops:[
+      {time:"早上", name:"廈門高崎國際機場", lat:24.544, lng:118.128, note:"入境後搭高鐵或包車前往福州"},
+      {time:"午後", name:"福州西湖大飯店", lat:26.095795, lng:119.291174, note:"入住飯店，下午休息"},
+      {time:"6:00 PM", name:"三坊七巷", lat:26.085262, lng:119.296521, note:"明清古街區，適合散步拍照"},
+      {time:"8:00 PM", name:"達明路夜市", lat:26.08886, lng:119.29542, note:"魚丸、肉燕、鍋邊、芋泥、海蠣煎"}
+    ]
+  },
+  {
+    day:2, title:"福州 → 平潭北線",
+    sub:"早班高鐵前往平潭，北港文創村、仙人井、長江澳風車田、北部生態廊道",
+    center:[25.7,119.5], zoom:9,
+    stops:[
+      {time:"7:15 AM", name:"福州西湖大飯店", lat:26.095795, lng:119.291174, note:"出發前往福州南站搭高鐵去平潭"},
+      {time:"9:30 AM", name:"北港文創村", lat:25.583387, lng:119.829378, note:"原生態石頭厝村落，文創小店，海鮮麵"},
+      {time:"11:30 AM", name:"仙人井（東海仙境）", lat:25.545924, lng:119.870928, note:"海蝕地貌奇觀，門票約RMB35"},
+      {time:"2:00 PM", name:"長江澳風力田", lat:25.5, lng:119.75, note:"巨大風車群與大海同框，傍晚夕陽超美"},
+      {time:"4:00 PM", name:"北部生態廊道", lat:25.52, lng:119.8, note:"騎電動車／自駕打卡網紅S彎，一路海景"},
+      {time:"7:30 PM", name:"福州西湖大飯店", lat:26.095795, lng:119.291174, note:"晚上搭高鐵返回福州，入住"}
+    ]
+  },
+  {
+    day:3, title:"平潭南線 → 福州",
+    sub:"澎前台灣小鎮、平潭縣城小吃，下午返回福州",
+    center:[25.6,119.6], zoom:9,
+    stops:[
+      {time:"9:30 AM", name:"澎前台灣小鎮", lat:25.473897, lng:119.822932, note:"逛逛特色商店，買伴手禮（可選）"},
+      {time:"12:00 PM", name:"平潭縣城", lat:25.5, lng:119.79, note:"咸塭、天長地久、平潭魚丸，地道海島風味"},
+      {time:"3:30 PM", name:"福州西湖大飯店", lat:26.095795, lng:119.291174, note:"坐高鐵回福州南站，再地鐵回飯店"}
+    ]
+  },
+  {
+    day:4, title:"福州 → 廈門",
+    sub:"福州收尾行程，下午前往廈門，入住機場附近準備隔日班機",
+    center:[25.3,118.7], zoom:8,
+    stops:[
+      {time:"9:30 AM", name:"三坊七巷", lat:26.085262, lng:119.296521, note:"把沒走完的部分逛完"},
+      {time:"11:00 AM", name:"林則徐紀念館", lat:26.0625, lng:119.305, note:"免費預約，室內展館不怕曬"},
+      {time:"5:00 PM", name:"Courtyard by Marriott Xiamen Airport", lat:24.558859, lng:118.13032, note:"前往廈門入住，近機場約15分鐘車程"}
+    ]
+  },
+  {
+    day:5, title:"搭機返台",
+    sub:"一早前往機場，辦理出境手續準備返台",
+    center:[24.544,118.128], zoom:11,
+    stops:[
+      {time:"6:00 AM", name:"廈門高崎國際機場", lat:24.544, lng:118.128, note:"建議提早2.5小時到機場辦理出境手續"}
+    ]
+  }
+];
+
+let map, markers=[], currentDay=0, currentView='list', mapInited=false;
+
+function gmapUrl(lat,lng){ return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; }
+
+function initMap(){
+  if(mapInited) return;
+  mapInited=true;
+  map=L.map('map',{zoomControl:true}).setView([25.5,119.2],8);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:19
+  }).addTo(map);
+  renderMapMarkers(currentDay);
+}
+
+function pinIcon(n){
+  return L.divIcon({
+    className:'',
+    html:`<div class="pin-bubble">${n}</div>`,
+    iconSize:[32,32], iconAnchor:[16,16]
+  });
+}
+
+function renderMapMarkers(dayIndex){
+  if(!mapInited) return;
+  markers.forEach(m=>map.removeLayer(m));
+  const day=itinerary[dayIndex];
+  markers=day.stops.map((s,i)=>{
+    const m=L.marker([s.lat,s.lng],{icon:pinIcon(i+1)}).addTo(map);
+    m.bindPopup(`<b>${s.name}</b><br>${s.time}<br>${s.note}<br><a class="popup-maplink" href="${gmapUrl(s.lat,s.lng)}" target="_blank">📍 Google Maps</a>`);
+    return m;
+  });
+  const bounds=L.latLngBounds(day.stops.map(s=>[s.lat,s.lng]));
+  map.flyToBounds(bounds,{padding:[50,50],duration:0.7,maxZoom:12});
+}
+
+function renderDay(dayIndex){
+  currentDay=dayIndex;
+  document.querySelectorAll('.day-tab').forEach((t,i)=>t.classList.toggle('active',i===dayIndex));
+  const day=itinerary[dayIndex];
+  document.getElementById('dayHeader').innerHTML=`
+    <div class="eyebrow">DAY ${day.day}</div>
+    <h2>${day.title}</h2>
+    <p>${day.sub}</p>
+  `;
+  document.getElementById('stopsList').innerHTML=day.stops.map((s,i)=>`
+    <div class="stop">
+      <div class="stop-left">
+        <div class="stop-num">${i+1}</div>
+        <div class="stop-line"></div>
+      </div>
+      <div class="stop-body">
+        <div class="time">${s.time}</div>
+        <h3>${s.name}</h3>
+        <p>${s.note}</p>
+        <a class="map-link" href="${gmapUrl(s.lat,s.lng)}" target="_blank" rel="noopener">📍 Google Maps</a>
+      </div>
+    </div>
+  `).join('');
+  if(currentView==='map') renderMapMarkers(dayIndex);
+  document.getElementById('listView').scrollTop=0;
+}
+
+function setView(v){
+  currentView=v;
+  document.getElementById('btnList').classList.toggle('active',v==='list');
+  document.getElementById('btnMap').classList.toggle('active',v==='map');
+  document.getElementById('listView').classList.toggle('visible',v==='list');
+  document.getElementById('mapView').classList.toggle('visible',v==='map');
+  if(v==='map'){
+    initMap();
+    setTimeout(()=>{ map.invalidateSize(); renderMapMarkers(currentDay); },100);
+  }
+}
+
+// init tabs
+document.getElementById('dayTabs').innerHTML=itinerary.map((d,i)=>`<button class="day-tab" onclick="renderDay(${i})">Day ${d.day}</button>`).join('');
+renderDay(0);
+</script>
+</body>
+</html>
